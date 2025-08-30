@@ -1,19 +1,19 @@
 package network
 
 import (
+	"context" // <-- EDIT: added this import for context.Context
 	"fmt"
 
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 )
 
-// EnableNetwork returns actions to enable network domain.
 func EnableNetwork() chromedp.Action {
 	return network.Enable()
 }
 
-// AttachLogger wires a listener that prints status codes.
-func AttachLogger(ctx chromedp.Context) {
+// AttachLogger attaches a network event listener to log HTTP responses.
+func AttachLogger(ctx context.Context) {
 	go func() {
 		chromedp.ListenTarget(ctx, func(ev interface{}) {
 			if resp, ok := ev.(*network.EventResponseReceived); ok {
