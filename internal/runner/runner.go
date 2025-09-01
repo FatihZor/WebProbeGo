@@ -12,43 +12,44 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-// Run wires up chromedp and orchestrates the flow.
 func Run(parent context.Context, cfg *config.Config) error {
-	// Create Chrome context
 	ctx, cancel := chromedp.NewContext(parent)
 	defer cancel()
-
-	// Global timeout
 	ctx, cancel = context.WithTimeout(ctx, time.Duration(cfg.TimeoutSec)*time.Second)
 	defer cancel()
 
-	// Network logging (optional)
 	var tasks []chromedp.Action
+
 	if cfg.EnableNetwork {
 		network.AttachLogger(ctx)
 		tasks = append(tasks, network.EnableNetwork())
 	}
 
-	// Navigate & fetch body
-	bodyActions, bodyPtr := analyzer.NavigateAndGetBody(cfg.Domain, cfg.UserAgent,
-		ifThen(cfg.EnableNetwork, cfg.NetworkWaitSec))
+	// 1) Navigate & Body
+	bodyActions, bodyPtr := analyzer.NavigateAndGetBody(cfg.Domain, cfg.UserAgent, ifThen(cfg.EnableNetwork, cfg.NetworkWaitSec))
 	tasks = append(tasks, bodyActions...)
 
-	// Screenshot (optional)
+	// 2) Meta (opsiyonel)
+	var meta analyzer.MetaInfo
+	if cfg.EnableMeta {
+		tasks = append(tasks, analyzer.MetaActions(&meta)...)
+	}
+
+	// 3) Screenshot (opsiyonel)
 	var shotBuf []byte
 	if cfg.ScreenshotFile != "" {
 		tasks = append(tasks, screenshot.FullPage(&shotBuf, 90))
 	}
 
-	// Run
+	// Run actions
 	if err := chromedp.Run(ctx, tasks...); err != nil {
-		// fallback: try only body fetch with short window
+		// Fallback sadece body
 		fallbackCtx, cancel2 := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel2()
 		_ = chromedp.Run(fallbackCtx, chromedp.InnerHTML("body", bodyPtr, chromedp.ByQuery))
 	}
 
-	// Report search results
+	// Arama sonuçları (varsa)
 	if len(cfg.SearchTerms) > 0 {
 		results := analyzer.SearchTerms(*bodyPtr, cfg.SearchTerms)
 		for term, ok := range results {
@@ -60,7 +61,18 @@ func Run(parent context.Context, cfg *config.Config) error {
 		}
 	}
 
-	// Save screenshot
+	// Meta sonuçlarını yaz
+	if cfg.EnableMeta {
+		meta.Clean()
+		fmt.Println("\n🧭 Meta Info")
+		fmt.Println("Title      :", meta.Title)
+		fmt.Println("Description:", meta.Description)
+		fmt.Println("Keywords   :", meta.Keywords)
+		fmt.Println("Canonical  :", meta.Canonical)
+		fmt.Println("Favicon    :", meta.FaviconURL)
+	}
+
+	// Screenshot kaydet
 	if cfg.ScreenshotFile != "" && len(shotBuf) > 0 {
 		if err := screenshot.SavePNG(cfg.ScreenshotFile, shotBuf); err != nil {
 			return fmt.Errorf("save screenshot: %w", err)
@@ -71,7 +83,6 @@ func Run(parent context.Context, cfg *config.Config) error {
 	return nil
 }
 
-// ifThen returns v if cond is true, otherwise false.
 func ifThen(cond bool, v int) int {
 	if cond {
 		return v

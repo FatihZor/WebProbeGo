@@ -11,4 +11,5 @@ type Config struct {
 	NetworkWaitSec int
 	UserAgent      string
 	ScreenshotFile string
+	EnableMeta     bool
 }

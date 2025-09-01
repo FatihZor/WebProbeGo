@@ -26,6 +26,8 @@ func main() {
 		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
 		"Custom User-Agent string")
 	flag.StringVar(&cfg.ScreenshotFile, "screenshot", "", "Save full-page screenshot to PNG (e.g. out.png)")
+	flag.BoolVar(&cfg.EnableMeta, "meta", false, "Extract meta info (title/description/keywords/canonical/favicon)")
+
 	flag.Parse()
 
 	if cfg.Domain == "" {
