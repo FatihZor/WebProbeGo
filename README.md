@@ -13,6 +13,12 @@ It allows you to probe websites, capture screenshots, inspect network requests, 
 - **Keyword/phrase search** (`--find`, `--find-file`)  
   Search for a single term or a list of terms (from a `.txt` file) in the page body.
 
+- **Meta info extraction** (`--meta`)  
+  Extract title, description, keywords, canonical URL, and favicon.
+
+- **Link inventory** (`--links`)  
+  Collect all `<a>` links and classify them as internal vs external.
+
 - **Screenshots** (`--screenshot`)  
   Save a full-page PNG screenshot of the target site.
 
@@ -23,24 +29,22 @@ It allows you to probe websites, capture screenshots, inspect network requests, 
 
 ## 🚧 Roadmap
 
-Planned improvements for upcoming versions:
+Planned improvements:
 
-- Extract meta information: `<title>`, `<meta description>`, `<meta keywords>`, favicon.
-- Heading structure map (H1–H3, optionally deeper).
-- Full link inventory: internal vs external references.
-- Broken link checker for `<a href>` and `<img src>`.
-- SSL/TLS certificate inspection (validity & expiration date).
-- Redirect chain tracking and loop detection.
-- Selector-only screenshots (e.g. `#main-content`).
-- Mobile & tablet viewport emulation (device profiles).
-- Security headers report: CSP, HSTS, X-Frame-Options, etc.
-- Cookie security flags check (`Secure`, `HttpOnly`, `SameSite`).
-- Resource size reporting (large JS/CSS/images flagged).
-- CSV/JSON export for structured analysis results.
-- Single-file HTML report (with embedded screenshot & results).
-- Batch scanning multiple domains from a TXT file.
-- Parallel/concurrent scanning for faster batch runs.
-- Colored terminal output for better readability.
+- Heading map (H1–H3, optionally deeper)
+- Broken link checker (`<a>` and `<img>`)
+- SSL/expiry check
+- Redirect chain report
+- Selector-only screenshots (e.g. `--screenshot="#main"`)
+- Mobile/tablet viewport emulation
+- Security headers report (CSP, HSTS, X-Frame-Options, etc.)
+- Cookie flags check (`Secure`, `HttpOnly`, `SameSite`)
+- Resource sizes & heavy files list
+- CSV/JSON exports
+- Single-file HTML report (with embedded screenshot & results)
+- Batch scan from TXT of domains
+- Parallel/concurrent scans
+- Colored terminal output
 
 ---
 
@@ -51,5 +55,28 @@ Clone and build manually:
 ```bash
 git clone https://github.com/FatihZor/WebProbeGo.git
 cd WebProbeGo
+go mod tidy
 go build -o webprobego ./cmd/webprobego
 ```
+
+---
+
+## 🚀 Usage
+
+```bash
+# Basic keyword search
+webprobego --domain=example.com --find=portfolio
+
+# Search using a list of keywords from a file
+webprobego --domain=example.com --find-file=terms.txt
+
+# Extract meta info
+webprobego --domain=example.com --meta
+
+# Collect link inventory
+webprobego --domain=example.com --links
+
+# Capture network requests and take a screenshot
+webprobego --domain=example.com --network --screenshot=site.png
+```
+
