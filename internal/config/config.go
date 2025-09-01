@@ -12,4 +12,5 @@ type Config struct {
 	UserAgent      string
 	ScreenshotFile string
 	EnableMeta     bool
+	EnableLinks    bool
 }

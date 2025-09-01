@@ -29,13 +29,19 @@ func Run(parent context.Context, cfg *config.Config) error {
 	bodyActions, bodyPtr := analyzer.NavigateAndGetBody(cfg.Domain, cfg.UserAgent, ifThen(cfg.EnableNetwork, cfg.NetworkWaitSec))
 	tasks = append(tasks, bodyActions...)
 
-	// 2) Meta (opsiyonel)
+	// 2) Meta (optional)
 	var meta analyzer.MetaInfo
 	if cfg.EnableMeta {
 		tasks = append(tasks, analyzer.MetaActions(&meta)...)
 	}
 
-	// 3) Screenshot (opsiyonel)
+	// 3) Links (optional)
+	var rawLinks []analyzer.RawLink
+	if cfg.EnableLinks {
+		tasks = append(tasks, analyzer.LinkActions(&rawLinks)...)
+	}
+
+	// 4) Screenshot (optional)
 	var shotBuf []byte
 	if cfg.ScreenshotFile != "" {
 		tasks = append(tasks, screenshot.FullPage(&shotBuf, 90))
@@ -43,13 +49,13 @@ func Run(parent context.Context, cfg *config.Config) error {
 
 	// Run actions
 	if err := chromedp.Run(ctx, tasks...); err != nil {
-		// Fallback sadece body
+		// fallback: body
 		fallbackCtx, cancel2 := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel2()
 		_ = chromedp.Run(fallbackCtx, chromedp.InnerHTML("body", bodyPtr, chromedp.ByQuery))
 	}
 
-	// Arama sonuçları (varsa)
+	// Search results
 	if len(cfg.SearchTerms) > 0 {
 		results := analyzer.SearchTerms(*bodyPtr, cfg.SearchTerms)
 		for term, ok := range results {
@@ -61,7 +67,7 @@ func Run(parent context.Context, cfg *config.Config) error {
 		}
 	}
 
-	// Meta sonuçlarını yaz
+	// Write meta info
 	if cfg.EnableMeta {
 		meta.Clean()
 		fmt.Println("\n🧭 Meta Info")
@@ -72,7 +78,33 @@ func Run(parent context.Context, cfg *config.Config) error {
 		fmt.Println("Favicon    :", meta.FaviconURL)
 	}
 
-	// Screenshot kaydet
+	// Write link inventory
+	if cfg.EnableLinks {
+		internals, externals := analyzer.PostprocessLinks(cfg.Domain, rawLinks)
+		fmt.Printf("\n🔗 Link Inventory\n")
+		fmt.Printf("Internal: %d\n", len(internals))
+		fmt.Printf("External: %d\n", len(externals))
+
+		// TODO: all links to file?
+		// Show first 10 internal and first 10 external
+
+		max := func(n, lim int) int {
+			if n < lim {
+				return n
+			}
+			return lim
+		}
+		fmt.Println("\nFirst 10 internal:")
+		for i := 0; i < max(len(internals), 10); i++ {
+			fmt.Printf("  - %s\n", internals[i].URL)
+		}
+		fmt.Println("\nFirst 10 external:")
+		for i := 0; i < max(len(externals), 10); i++ {
+			fmt.Printf("  - %s\n", externals[i].URL)
+		}
+	}
+
+	// Save screenshot
 	if cfg.ScreenshotFile != "" && len(shotBuf) > 0 {
 		if err := screenshot.SavePNG(cfg.ScreenshotFile, shotBuf); err != nil {
 			return fmt.Errorf("save screenshot: %w", err)

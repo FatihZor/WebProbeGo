@@ -14,8 +14,7 @@ type MetaInfo struct {
 	FaviconURL  string
 }
 
-// MetaActions hazır DOM üzerinden gerekli alanları toplar.
-// WaitReady('body') sonrası çağrılacak şekilde sadece Evaluate/Value alır.
+// MetaActions returns chromedp actions to extract meta information into the given MetaInfo struct.
 func MetaActions(mi *MetaInfo) []chromedp.Action {
 	return []chromedp.Action{
 		// Title
